@@ -58,11 +58,25 @@ def process_logs(conn, path, callback):
         update_progress()
         inp.close()
 
-    # 第二种：只追加文件（append-only file，AOF）
-    # 它会在执行写命令时，将被执行的写命令复制到硬盘里面
-    # 相关配置
-    # appendonly no 是否只是用aof持久化
-    # appendfsync everysec  多久写一次磁盘
-    # no-appendfsync-on-rewrite no  压缩时候是否执行同步操作
-    # auto-aof-rewrite-percentage 100   多久执行一次aof压缩
-    # auto-aof-rewrite-min-size 64mb
+# 第二种：只追加文件（append-only file，AOF）
+# 它会在执行写命令时，将被执行的写命令复制到硬盘里面
+# 相关配置
+# appendonly no 是否开启aof持久化
+# appendfsync everysec  多久写一次磁盘
+# no-appendfsync-on-rewrite no  压缩时候是否执行同步操作
+
+# 以下两个命令：
+# 表示：当那么当 AOF 文件的体积大于 64 MB，
+# 并且 AOF 文件的体积比上一次重写之后的体积大了至少一倍（100%）的时候，
+# Redis 将执行 BGREWRITEAOF 命令
+# auto-aof-rewrite-percentage 100
+# auto-aof-rewrite-min-size 64mb
+
+# appendfsync的配置选项
+# always 每个 Redis 写命令都要同步写入硬盘。这样做会严重降低 Redis 的速度
+# everysec 每秒执行一次同步，显式地将多个写命令同步到硬盘
+# no 让操作系统来决定应该何时进行同步
+
+
+# BGREWRITEAOF
+# 通过移除 AOF 文件中的冗余命令来重写（rewrite）AOF 文件
