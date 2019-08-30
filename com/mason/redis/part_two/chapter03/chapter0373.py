@@ -27,7 +27,7 @@ def update_token(conn, token, user, item=None):
     conn.setex('login:' + token, user, THIRTY_DAYS)  # B
     key = 'viewed:' + token
     if item:
-        conn.lrem(key, item)
+        conn.lrem(key, 1, item)
         conn.rpush(key, item)
         conn.ltrim(key, -25, -1)
         conn.zincrby('viewed:', item, -1)
