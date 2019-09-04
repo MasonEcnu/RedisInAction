@@ -7,7 +7,6 @@ import time
 from redis import Redis
 
 from com.mason.redis.my_log import get_logger
-from com.mason.redis_client import redisClient
 
 my_logger = get_logger()
 
@@ -52,8 +51,8 @@ def process_sold_email_queue(conn: Redis):
             my_logger.info("Send sold email %s", to_send)
 
 
-redisClient.delete("queue:email")
-send_sold_email_via_queue(redisClient, "seller", "item", "price", "buyer")
+# redisClient.delete("queue:email")
+# send_sold_email_via_queue(redisClient, "seller", "item", "price", "buyer")
 
 
 # process_sold_email_queue(redisClient)
@@ -78,5 +77,22 @@ def worker_watch_queue(conn: Redis, queue, callbacks):
         callbacks[name](args)
 
 
-callbacks = {"fetch_data_and_send_sold_email": fetch_data_and_send_sold_email}
-worker_watch_queue(redisClient, "queue:email", callbacks)
+# callbacks = {"fetch_data_and_send_sold_email": fetch_data_and_send_sold_email}
+# worker_watch_queue(redisClient, "queue:email", callbacks)
+
+
+# 任务优先级
+# queues:分别按顺序放置高中低优先级的任务key即可
+# blpop:将弹出第一个非空列表的第一个元素
+def worker_watch_queue_with_priority(conn: Redis, queues, callbacks):
+    while not QUIT_FLAG:
+        packed = conn.blpop(queues, timeout=30)
+        if not packed:
+            continue
+
+        name, args = json.loads(packed[1])
+        if name not in callbacks:
+            my_logger.error("Unknown callback %s", name)
+            continue
+
+        callbacks[name](args)
