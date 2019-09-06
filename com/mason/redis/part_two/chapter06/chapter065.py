@@ -8,6 +8,7 @@ import time
 from redis import Redis
 
 from com.mason.redis.part_two.chapter06.chapter062 import acquire_lock, release_lock
+from com.mason.redis_client import redisClient
 
 
 def send_message_single(conn: Redis, receiver, sender, msg):
@@ -125,6 +126,7 @@ def join_chat(conn: Redis, chat_id, user):
 
 def leave_chat(conn: Redis, chat_id, user):
     pipe = conn.pipeline(True)
+    chat_id = str(chat_id)
     # 从群组中移除
     pipe.zrem("chat:" + chat_id, user)
     # 从已读消息中移除
@@ -140,3 +142,12 @@ def leave_chat(conn: Redis, chat_id, user):
         # 找出并删除那些被所有成员阅读过的消息
         oldest = conn.zrange("chat:" + chat_id, 0, 0, withscores=True)
         conn.zremrangebyscore("msgs:" + chat_id, 0, oldest[0][1])
+
+
+sender = "mason"
+recipients = ["lily", "yahaha"]
+# create_chat(redisClient, sender, recipients, "Hello World!")
+msg = fetch_pending_messages(redisClient, sender)
+print(msg)
+# msg = fetch_pending_messages(redisClient, "lily")
+leave_chat(redisClient, 1, sender)
