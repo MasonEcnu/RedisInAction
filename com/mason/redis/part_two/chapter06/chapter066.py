@@ -8,21 +8,27 @@ from collections import defaultdict
 # 用于每天以国家维度对日志行进行聚合
 from redis import Redis
 
+# 准备本地聚合数据字典
 aggregates = defaultdict(lambda: defaultdict(int))
 
 
 def daily_country_aggregate(conn: Redis, line: str):
     if line:
         # 默认按空格分割
+        # 提取日志行中的信息
         line = line.split()
         ip = line[0]
         day = line[1]
+        # 根据Ip地址判断用户所在国家
         country = find_city_by_ip_local(ip)[2]
         if not country:
             country = -1
+        # 对本地聚合数据执行自增
         aggregates[day][country] += 1
         return
 
+    # 当天日志处理完毕
+    # 将聚合计算的结果写入Redis里
     for day, aggregate in aggregates.items():
         conn.zadd("daily:country:" + day, **aggregate)
         del aggregates[day]

@@ -8,7 +8,6 @@ import time
 from redis import Redis
 
 from com.mason.redis.part_two.chapter06.chapter062 import acquire_lock, release_lock
-from com.mason.redis_client import redisClient
 
 
 def send_message_single(conn: Redis, receiver, sender, msg):
@@ -36,7 +35,7 @@ def receive_message_single(conn: Redis, receiver):
 # 创建群组聊天会话
 
 
-def create_chat(conn: Redis, sender, recipients: list, message, chat_id=None):
+def create_chat(conn: Redis, sender, recipients: iter, message, chat_id=None):
     # 获取新的群组Id
     chat_id = chat_id or str(conn.incr("ids:chat:"))
 
@@ -143,11 +142,10 @@ def leave_chat(conn: Redis, chat_id, user):
         oldest = conn.zrange("chat:" + chat_id, 0, 0, withscores=True)
         conn.zremrangebyscore("msgs:" + chat_id, 0, oldest[0][1])
 
-
-sender = "mason"
-recipients = ["lily", "yahaha"]
-# create_chat(redisClient, sender, recipients, "Hello World!")
-msg = fetch_pending_messages(redisClient, sender)
-print(msg)
-# msg = fetch_pending_messages(redisClient, "lily")
-leave_chat(redisClient, 1, sender)
+# sender = "mason"
+# recipients = ["lily", "yahaha"]
+# # create_chat(redisClient, sender, recipients, "Hello World!")
+# msg = fetch_pending_messages(redisClient, sender)
+# print(msg)
+# # msg = fetch_pending_messages(redisClient, "lily")
+# leave_chat(redisClient, 1, sender)
