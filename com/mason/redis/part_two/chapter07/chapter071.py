@@ -69,6 +69,6 @@ def index_document(conn: Redis, doc_id, content):
 
 # 反向索引虽然对关键字搜索友好
 # 但是对删除却不够友好
-str = json.dumps(list(STOP_WORDS))
-obj = json.loads(str)
-print(obj)
+# str = json.dumps(list(STOP_WORDS))
+# obj = json.loads(str)
+# print(obj)
