@@ -1,35 +1,62 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# 基本搜索操作
+# 有序索引
+
+# 使用有序集合对搜索结果进行排序
 import uuid
 
 from redis import Redis
 
+from com.mason.redis.part_two.chapter07.chapter071 import parse_and_search
 
-def _set_common(conn: Redis, method, names, ttl=30, execute=True):
-    # 创建一个临时标识符
+
+def search_and_zsort(conn: Redis, query, id=None, ttl=300, update=1, vote=0, start=0, num=20, desc=True):
+    if id and not conn.expire(id, ttl):
+        id = None
+
+    if not id:
+        id = parse_and_search(conn, query, ttl=ttl)
+
+        scored_search = {
+            "id": 0,
+            "sort:update": update,
+            "sort:votes:": vote
+        }
+
+        id = zintersect(conn, scored_search, ttl)
+
+    pipe = conn.pipeline(True)
+    pipe.zcard("idx:" + id)
+    if desc:
+        pipe.zrevrange("idx:" + id, start, start, + num - 1)
+    else:
+        pipe.zrange("idx:" + id, start, start + num - 1)
+
+    results = pipe.execute()
+    return results[0], results[1], id
+
+
+def _zset_common(conn: Redis, method, scores, ttl=30, **kw):
     id = str(uuid.uuid4())
+    execute = kw.pop("_execute", True)
     pipe = conn.pipeline(True) if execute else conn
-    # 给要查找的单词加前缀
-    names = ["idx:" + name for name in names]
-    # 为将要执行的集合操作设置响应的参数
-    getattr(pipe, method)("idx:" + id, *names)
-    # 搜索结果自动删除
+    for key in scores.keys():
+        scores["idx:" + key] = scores.pop(key)
+
+    getattr(pipe, method)("idx:" + id, scores, **kw)
     pipe.expire("idx:" + id, ttl)
     if execute:
-        # 执行
         pipe.execute()
+
     return id
 
 
-def intersect(conn: Redis, items, ttl=30, _execute=True):
-    return _set_common(conn, "sinterstore", items, ttl, _execute)
+def zintersect(conn: Redis, items, ttl=30, **kw):
+    return _zset_common(conn, "zinterstore", dict(items), ttl, **kw)
 
 
-def union(conn: Redis, items, ttl=30, _execute=True):
-    return _set_common(conn, "sunionstore", items, ttl, _execute)
+def zunion(conn: Redis, items, ttl=30, **kw):
+    return _zset_common(conn, "zunionstore", dict(items), ttl, **kw)
 
-
-def difference(conn: Redis, items, ttl=30, _execute=True):
-    return _set_common(conn, "sdiffstore", items, ttl, _execute)
+# 暂时到此为止
